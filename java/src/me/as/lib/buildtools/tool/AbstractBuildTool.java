@@ -32,10 +32,13 @@ import static me.as.lib.core.log.LogEngine.logOut;
 import static me.as.lib.core.system.FileSystemExtras.getCanonicalPath;
 import static me.as.lib.core.system.FileSystemExtras.isDirectory;
 import static me.as.lib.core.system.FileSystemExtras.mergePath;
+import static me.as.lib.minicli.CommandLineHandler.useHelp;
 
 
 public abstract class AbstractBuildTool<T>
 {
+
+ protected boolean canRunWithoutArgsAndWithoutOptions=false;
 
  protected String configFile;
 
@@ -50,6 +53,11 @@ public abstract class AbstractBuildTool<T>
 
  public abstract String getDefaultConfigFile();
 
+
+ public void printUsageAndExit()
+ {
+  problems.addShowStopperNoPrefix(useHelp);
+ }
 
  public String getConfigFile()
  {
@@ -141,6 +149,8 @@ public abstract class AbstractBuildTool<T>
 
  protected void adjustParameters()
  {
+  boolean configuredByFile=false;
+
   logOut.setTraceLevels(verbosity);
 
   // workingDirectory
@@ -156,7 +166,7 @@ public abstract class AbstractBuildTool<T>
   // configFile
   String defaultConfigFile=getDefaultConfigFile();
   boolean autoConfigFile=commandLineHandler.getNumberOfPassedOptions()==0;
-  configFile=getCanonicalPathForWorkingDirectory(configFile, autoConfigFile ? "./"+defaultConfigFile : null);
+  configFile=getCanonicalPathForWorkingDirectory(configFile, autoConfigFile ? (isNotBlank(defaultConfigFile) ? "./"+defaultConfigFile : null) : null);
 
   if (isNotBlank(configFile))
   {
@@ -169,14 +179,19 @@ public abstract class AbstractBuildTool<T>
 
    if (worked)
    {
+    configuredByFile=true;
     String dNf[]=FileSystemExtras.getDirAndFilename(configFile);
     workingDirectory=getCanonicalPath(dNf[0]);
    }
 
-
   }
 
-
+  if (!canRunWithoutArgsAndWithoutOptions &&
+      !configuredByFile &&
+      ArrayExtras.length(commandLineHandler.getArgs())==0)
+  {
+   printUsageAndExit();
+  }
  }
 
 
