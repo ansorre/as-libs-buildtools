@@ -17,11 +17,11 @@
 package me.as.lib.buildtools;
 
 
-import me.as.lib.buildtools.io.JavaBundleSpecs;
 import me.as.lib.core.concurrent.SimpleSynchro;
 import me.as.lib.core.concurrent.ThreadExtras;
 import me.as.lib.core.extra.BoxFor2;
 import me.as.lib.core.lang.ArrayExtras;
+import me.as.lib.core.lang.ObjectExtras;
 import me.as.lib.core.system.FileSystemExtras;
 
 import java.io.IOException;
@@ -46,7 +46,7 @@ import static me.as.lib.core.system.FileSystemExtras.isFile;
 import static me.as.lib.core.system.FileSystemExtras.mergePath;
 
 
-public class Watcher
+public class Watcher<J>
 {
  public static final long latencyMillis = 120;
 
@@ -58,7 +58,7 @@ public class Watcher
  final SimpleSynchro innerSs=new SimpleSynchro();
  final ArrayList<String> changed=new ArrayList<>();
  final ArrayList<String> changedAndFireable=new ArrayList<>();
- final HashMap<String, JavaBundleSpecs> mappedBundleSpecs=new HashMap<>();
+ final HashMap<String, J> mappedBundleSpecs=new HashMap<>();
  final List<String> yetWatching=new ArrayList<>();
 
  private WatchService watcher;
@@ -79,14 +79,14 @@ public class Watcher
  }
 
 
- public List<BoxFor2<String, JavaBundleSpecs>> getChanged()
+ public List<BoxFor2<String, J>> getChanged()
  {
   if (inWaiting.get())
    return null;
 
   synchronized (changedAndFireable)
   {
-   ArrayList<BoxFor2<String, JavaBundleSpecs>> res=null;
+   ArrayList<BoxFor2<String, J>> res=null;
 
    if (changedAndFireable.size()>0)
    {
@@ -210,7 +210,13 @@ public class Watcher
 
 
 
- public void addToWatching(String path, JavaBundleSpecs bundleSpecs)
+ public void addToWatching(String path)
+ {
+  addToWatching(path, null);
+ }
+
+
+ public void addToWatching(String path, J custom)
  {
   if (!yetWatching.contains(path))
   {
@@ -227,7 +233,7 @@ public class Watcher
      ThreadExtras.executeOnAnotherThread(false, this::watcherMain);
     }
 
-    mappedBundleSpecs.put(path, bundleSpecs);
+    mappedBundleSpecs.put(path, custom);
     p.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
    }
    catch (IOException io)

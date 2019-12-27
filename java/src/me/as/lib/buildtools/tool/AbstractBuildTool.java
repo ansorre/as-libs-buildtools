@@ -59,6 +59,11 @@ public abstract class AbstractBuildTool<T>
   problems.addShowStopperNoPrefix(useHelp);
  }
 
+ public Problems getProblems()
+ {
+  return problems;
+ }
+
  public String getConfigFile()
  {
   return configFile;
